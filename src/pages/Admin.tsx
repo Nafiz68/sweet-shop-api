@@ -44,9 +44,38 @@ export default function Admin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, order_items(*, products(name)), profiles(email, full_name)")
+        .select(`
+          *,
+          order_items (
+            *,
+            products (
+              name
+            )
+          )
+        `)
         .order("created_at", { ascending: false });
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Admin orders query error:", error);
+        throw error;
+      }
+      
+      // Fetch user profiles separately if needed
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(order => order.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, full_name")
+          .in("id", userIds);
+        
+        // Merge profiles into orders
+        const profileMap = new Map(profiles?.map(p => [p.id, p]));
+        data.forEach(order => {
+          order.profiles = profileMap.get(order.user_id) || null;
+        });
+      }
+      
+      console.log("Admin orders data:", data);
       return data;
     },
   });
@@ -56,10 +85,16 @@ export default function Admin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*, user_roles(role)")
-        .or("is_flagged_fraud.eq.true,cancellation_count.gte.2")
+        .select("*")
+        .gte("cancellation_count", 2)
         .order("cancellation_count", { ascending: false });
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Flagged users query error:", error);
+        throw error;
+      }
+      
+      console.log("Flagged users data:", data);
       return data;
     },
   });
@@ -147,14 +182,14 @@ export default function Admin() {
     cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   };
 
-  return  <TabsTrigger value="fraud"><AlertTriangle className="h-4 w-4 mr-1" />Fraud Tracking</TabsTrigger>
-         (
+  return (
     <div>
       <h1 className="text-3xl font-bold font-display mb-8">Admin Dashboard</h1>
       <Tabs defaultValue="products">
         <TabsList>
           <TabsTrigger value="products"><Package className="h-4 w-4 mr-1" />Products</TabsTrigger>
           <TabsTrigger value="orders"><ShoppingBag className="h-4 w-4 mr-1" />Orders</TabsTrigger>
+          <TabsTrigger value="fraud"><AlertTriangle className="h-4 w-4 mr-1" />Fraud Tracking</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products" className="mt-6">
@@ -255,13 +290,14 @@ export default function Admin() {
               {orders?.map((order: any) => (
                 <Card key={order.id}>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div>
+                    <div className="space-y-1">
                       <CardTitle className="font-display text-base">
                         Order #{order.id.slice(0, 8)}
                       </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {order.profiles?.full_name || order.profiles?.email} · {new Date(order.created_at).toLocaleDateString()}
-                      </p>
+                      <div className="text-sm text-muted-foreground space-y-0.5">
+                        <p className="font-medium text-foreground">{order.profiles?.email || 'No email'}</p>
+                        <p>{order.profiles?.full_name && `${order.profiles.full_name} • `}{new Date(order.created_at).toLocaleDateString()}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col gap-1">
