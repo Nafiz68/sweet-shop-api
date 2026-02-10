@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
+import { PaymentDialog } from "@/components/PaymentDialog";
 
 export default function Cart() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const { data: cartItems, isLoading } = useQuery({
     queryKey: ["cart"],
@@ -61,12 +65,12 @@ export default function Cart() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success("Order placed successfully!");
+    onSuccess: (orderId) => {
+      toast.success("Order created! Please complete payment.");
+      setCurrentOrderId(orderId);
+      setPaymentDialogOpen(true);
       queryClient.invalidateQueries({ queryKey: ["cart"] });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      navigate("/orders");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -140,10 +144,20 @@ export default function Cart() {
             <p className="text-3xl font-bold font-display">${total.toFixed(2)}</p>
           </div>
           <Button size="lg" onClick={() => placeOrder.mutate()} disabled={placeOrder.isPending}>
-            {placeOrder.isPending ? "Placing order..." : "Place Order"}
+            {placeOrder.isPending ? "Creating order..." : "Proceed to Payment"}
           </Button>
         </CardContent>
       </Card>
+
+      {currentOrderId && (
+        <PaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          orderId={currentOrderId}
+          totalAmount={total}
+          onSuccess={() => navigate("/orders")}
+        />
+      )}
     </div>
   );
 }

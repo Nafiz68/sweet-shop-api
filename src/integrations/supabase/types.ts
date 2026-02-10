@@ -93,6 +93,9 @@ export type Database = {
           total_price: number
           updated_at: string
           user_id: string
+          payment_status: string
+          payment_method: string | null
+          transaction_id: string | null
         }
         Insert: {
           created_at?: string
@@ -101,6 +104,9 @@ export type Database = {
           total_price: number
           updated_at?: string
           user_id: string
+          payment_status?: string
+          payment_method?: string | null
+          transaction_id?: string | null
         }
         Update: {
           created_at?: string
@@ -109,6 +115,9 @@ export type Database = {
           total_price?: number
           updated_at?: string
           user_id?: string
+          payment_status?: string
+          payment_method?: string | null
+          transaction_id?: string | null
         }
         Relationships: []
       }
@@ -151,18 +160,27 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          cancellation_count: number
+          is_flagged_fraud: boolean
+          last_cancellation_date: string | null
         }
         Insert: {
           created_at?: string
           email: string
           full_name?: string | null
           id: string
+          cancellation_count?: number
+          is_flagged_fraud?: boolean
+          last_cancellation_date?: string | null
         }
         Update: {
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
+          cancellation_count?: number
+          is_flagged_fraud?: boolean
+          last_cancellation_date?: string | null
         }
         Relationships: []
       }
@@ -197,6 +215,15 @@ export type Database = {
         Returns: boolean
       }
       place_order: { Args: { p_items: Json }; Returns: string }
+      cancel_order: { Args: { p_order_id: string }; Returns: undefined }
+      process_payment: {
+        Args: {
+          p_order_id: string
+          p_payment_method: string
+          p_transaction_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "customer"

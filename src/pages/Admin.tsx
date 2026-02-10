@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Package, ShoppingBag } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, ShoppingBag, AlertTriangle } from "lucide-react";
 
 interface ProductForm {
   name: string;
@@ -46,6 +46,19 @@ export default function Admin() {
         .from("orders")
         .select("*, order_items(*, products(name)), profiles(email, full_name)")
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: flaggedUsers, isLoading: usersLoading } = useQuery({
+    queryKey: ["flagged-users"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*, user_roles(role)")
+        .or("is_flagged_fraud.eq.true,cancellation_count.gte.2")
+        .order("cancellation_count", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -114,6 +127,13 @@ export default function Admin() {
     setDialogOpen(true);
   };
 
+  const paymentStatusColor: Record<string, string> = {
+    pending: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+    paid: "bg-green-500/10 text-green-500 border-green-500/20",
+    failed: "bg-red-500/10 text-red-500 border-red-500/20",
+    refunded: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  };
+
   const openCreate = () => {
     setEditId(null);
     setForm(emptyForm);
@@ -127,7 +147,8 @@ export default function Admin() {
     cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   };
 
-  return (
+  return  <TabsTrigger value="fraud"><AlertTriangle className="h-4 w-4 mr-1" />Fraud Tracking</TabsTrigger>
+         (
     <div>
       <h1 className="text-3xl font-bold font-display mb-8">Admin Dashboard</h1>
       <Tabs defaultValue="products">
@@ -243,20 +264,25 @@ export default function Admin() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Select
-                        value={order.status}
-                        onValueChange={(status) => updateOrderStatus.mutate({ id: order.id, status })}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="shipped">Shipped</SelectItem>
-                          <SelectItem value="delivered">Delivered</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex flex-col gap-1">
+                        <Select
+                          value={order.status}
+                          onValueChange={(status) => updateOrderStatus.mutate({ id: order.id, status })}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="shipped">Shipped</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Badge className={paymentStatusColor[order.payment_status] ?? ""} variant="outline">
+                          {order.payment_status}
+                        </Badge>
+                      </div>
                       <span className="font-bold font-display">${Number(order.total_price).toFixed(2)}</span>
                     </div>
                   </CardHeader>
@@ -269,10 +295,73 @@ export default function Admin() {
                         </div>
                       ))}
                     </div>
+                    {order.payment_method && (
+                      <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                        <span className="font-medium">Payment:</span> {order.payment_method.replace('_', ' ').toUpperCase()}
+                        {order.transaction_id && ` • ${order.transaction_id}`}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
             </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="fraud" className="mt-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-display font-semibold">Fraud Prevention & User Monitoring</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Users with suspicious activity (3+ cancellations or flagged accounts)
+            </p>
+          </div>
+          {usersLoading ? (
+            <p className="text-muted-foreground">Loading...</p>
+          ) : flaggedUsers && flaggedUsers.length > 0 ? (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Cancellations</TableHead>
+                    <TableHead>Last Cancellation</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {flaggedUsers.map((user: any) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.full_name || "N/A"}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={user.cancellation_count >= 3 ? "destructive" : "secondary"}>
+                          {user.cancellation_count}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {user.last_cancellation_date 
+                          ? new Date(user.last_cancellation_date).toLocaleDateString()
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        {user.is_flagged_fraud && (
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Flagged
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          ) : (
+            <Card className="p-8 text-center text-muted-foreground">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-20" />
+              <p>No suspicious activity detected</p>
+            </Card>
           )}
         </TabsContent>
       </Tabs>

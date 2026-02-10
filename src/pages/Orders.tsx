@@ -1,9 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ShoppingBag, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { PaymentDialog } from "@/components/PaymentDialog";
 
 const statusColor: Record<string, string> = {
   pending: "bg-warning/10 text-warning border-warning/20",
@@ -12,8 +16,18 @@ const statusColor: Record<string, string> = {
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
+const paymentStatusColor: Record<string, string> = {
+  pending: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  paid: "bg-green-500/10 text-green-500 border-green-500/20",
+  failed: "bg-red-500/10 text-red-500 border-red-500/20",
+  refunded: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+};
+
 export default function Orders() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["orders"],
@@ -27,6 +41,26 @@ export default function Orders() {
       return data;
     },
   });
+
+  const cancelOrder = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await supabase.rpc("cancel_order", {
+        p_order_id: orderId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Order cancelled successfully");
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const handleRetryPayment = (order: any) => {
+    setSelectedOrder(order);
+    setPaymentDialogOpen(true);
+  };
 
   if (isLoading) return <div className="flex justify-center py-20 text-muted-foreground">Loading orders...</div>;
 
@@ -55,9 +89,14 @@ export default function Orders() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <Badge className={statusColor[order.status] ?? ""} variant="outline">
-                  {order.status}
-                </Badge>
+                <div className="flex flex-col gap-1">
+                  <Badge className={statusColor[order.status] ?? ""} variant="outline">
+                    {order.status}
+                  </Badge>
+                  <Badge className={paymentStatusColor[order.payment_status] ?? ""} variant="outline">
+                    {order.payment_status}
+                  </Badge>
+                </div>
                 <span className="font-bold font-display text-lg">${Number(order.total_price).toFixed(2)}</span>
               </div>
             </CardHeader>
@@ -72,10 +111,62 @@ export default function Orders() {
                   </div>
                 ))}
               </div>
+              
+              {order.payment_method && (
+                <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
+                  Payment: {order.payment_method.replace('_', ' ').toUpperCase()}
+                  {order.transaction_id && ` • ${order.transaction_id}`}
+                </div>
+              )}
+
+              <div className="flex gap-2 mt-4">
+                {order.payment_status === "pending" && order.status !== "cancelled" && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleRetryPayment(order)}
+                    className="flex-1"
+                  >
+                    Complete Payment
+                  </Button>
+                )}
+                {order.payment_status === "failed" && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleRetryPayment(order)}
+                    className="flex-1"
+                  >
+                    Retry Payment
+                  </Button>
+                )}
+                {(order.status === "pending" || order.status === "shipped") && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => cancelOrder.mutate(order.id)}
+                    disabled={cancelOrder.isPending}
+                    className="flex-1"
+                  >
+                    <XCircle className="h-4 w-4 mr-1" />
+                    Cancel Order
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {selectedOrder && (
+        <PaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          orderId={selectedOrder.id}
+          totalAmount={Number(selectedOrder.total_price)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["orders"] });
+          }}
+        />
+      )}
     </div>
   );
 }
