@@ -109,8 +109,28 @@
     @apply border-border;
   }
 
+  /* Use pseudo-element for blurred background */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-image: url('/sweets-bg.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(4px);
+    transform: scale(1.05);
+    /* Avoid white edges from blur */
+    pointer-events: none;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background/0 text-foreground font-sans antialiased;
+    /* Make body transparent */
     font-family: 'Inter', sans-serif;
   }
 

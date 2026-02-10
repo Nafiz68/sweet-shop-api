@@ -58,7 +58,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   console.log("Layout - User:", user?.id, "Role:", role); // Debug log
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-md shadow-sm">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
