@@ -14,13 +14,17 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const { data: cartCount } = useQuery({
     queryKey: ["cart-count"],
-    enabled: role === "customer",
+    enabled: !!user && role === "customer",
     queryFn: async () => {
+      if (!user) return 0;
       const { data, error } = await supabase
         .from("cart_items")
-        .select("quantity", { count: "exact" })
-        .eq("user_id", user!.id);
-      if (error) throw error;
+        .select("quantity")
+        .eq("user_id", user.id);
+      if (error) {
+        console.error("Cart count error:", error);
+        return 0;
+      }
       return data?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
     },
   });
@@ -31,6 +35,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  console.log("Layout - User:", user?.id, "Role:", role); // Debug log
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,36 +51,39 @@ export default function Layout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <nav className="flex items-center gap-2">
-            {role === "admin" && (
-              <Button variant={isActive("/admin") ? "default" : "ghost"} size="sm" asChild>
-                <Link to="/admin"><LayoutDashboard className="h-4 w-4 mr-1" />Admin</Link>
-              </Button>
-            )}
-            {role === "customer" && (
+            {user && (
               <>
-                <Button variant={isActive("/") ? "default" : "ghost"} size="sm" asChild>
-                  <Link to="/"><Package className="h-4 w-4 mr-1" />Products</Link>
-                </Button>
-                <Button variant={isActive("/cart") ? "default" : "ghost"} size="sm" asChild className="relative">
-                  <Link to="/cart">
-                    <ShoppingCart className="h-4 w-4 mr-1" />
-                    Cart
-                    {cartCount > 0 && (
-                      <Badge className="ml-1.5 h-5 min-w-[20px] rounded-full bg-primary px-1 text-[10px] font-bold">
-                        {cartCount}
-                      </Badge>
-                    )}
-                  </Link>
-                </Button>
-                <Button variant={isActive("/orders") ? "default" : "ghost"} size="sm" asChild>
-                  <Link to="/orders"><ShoppingBag className="h-4 w-4 mr-1" />Orders</Link>
+                {role === "admin" ? (
+                  <Button variant={isActive("/admin") ? "default" : "ghost"} size="sm" asChild>
+                    <Link to="/admin"><LayoutDashboard className="h-4 w-4 mr-1" />Admin</Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant={isActive("/") ? "default" : "ghost"} size="sm" asChild>
+                      <Link to="/"><Package className="h-4 w-4 mr-1" />Products</Link>
+                    </Button>
+                    <Button variant={isActive("/cart") ? "default" : "ghost"} size="sm" asChild>
+                      <Link to="/cart" className="relative">
+                        <ShoppingCart className="h-4 w-4 mr-1" />
+                        Cart
+                        {cartCount !== undefined && cartCount > 0 && (
+                          <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] rounded-full bg-red-500 hover:bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-lg">
+                            {cartCount}
+                          </Badge>
+                        )}
+                      </Link>
+                    </Button>
+                    <Button variant={isActive("/orders") ? "default" : "ghost"} size="sm" asChild>
+                      <Link to="/orders"><ShoppingBag className="h-4 w-4 mr-1" />Orders</Link>
+                    </Button>
+                  </>
+                )}
+                {role && <Badge variant="outline" className="ml-2 capitalize">{role}</Badge>}
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
                 </Button>
               </>
             )}
-            <Badge variant="outline" className="ml-2 capitalize">{role}</Badge>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4" />
-            </Button>
           </nav>
         </div>
       </header>

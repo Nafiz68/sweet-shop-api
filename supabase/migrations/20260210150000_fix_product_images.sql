@@ -1,0 +1,21 @@
+-- Update product images with better URLs
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=800&q=80' WHERE name = 'Gummy Bears Deluxe Mix';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1514517521153-1be72277b32f?w=800&q=80' WHERE name = 'Artisan Lollipops';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=800&q=80' WHERE name = 'Cotton Candy Tub';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&q=80' WHERE name = 'Salted Caramel Chocolates';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1571506165871-ee72a35bc9d4?w=800&q=80' WHERE name = 'Peanut Butter Cups';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1511381939415-e44015466834?w=800&q=80' WHERE name = 'Belgian Dark Chocolate Box';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&q=80' WHERE name = 'Strawberry Cheesecake';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1569864358642-9d1684040f43?w=800&q=80' WHERE name = 'French Macarons Collection';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=800&q=80' WHERE name = 'Triple Chocolate Brownies';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1578849278619-e73505e9610f?w=800&q=80' WHERE name = 'Caramel Popcorn Bucket';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1587536849024-daaa4a417b16?w=800&q=80' WHERE name = 'Red Velvet Cupcakes';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=800&q=80' WHERE name = 'Tiramisu Cake';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=800&q=80' WHERE name = 'Chocolate Chip Cookies';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1626200419199-391ae4be7a41?w=800&q=80' WHERE name = 'Mint Chocolate Truffles';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=80' WHERE name = 'Rainbow Sprinkle Donuts';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1562007908-17c67e878c88?w=800&q=80' WHERE name = 'Pecan Pie Slice';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?w=800&q=80' WHERE name = 'Cinnamon Rolls';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=800&q=80' WHERE name = 'Chocolate Covered Strawberries';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&q=80' WHERE name = 'Vanilla Bean Ice Cream';
+UPDATE public.products SET image_url = 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=800&q=80' WHERE name = 'Blueberry Muffins';

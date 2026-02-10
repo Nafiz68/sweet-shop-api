@@ -51,6 +51,7 @@ export default function Products() {
     onSuccess: () => {
       toast.success("Added to cart!");
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart-count"] });
     },
     onError: (err: Error) => toast.error(err.message),
   });

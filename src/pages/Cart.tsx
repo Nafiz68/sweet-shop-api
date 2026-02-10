@@ -38,7 +38,10 @@ export default function Cart() {
         if (error) throw error;
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart-count"] });
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -49,6 +52,7 @@ export default function Cart() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart-count"] });
       toast.success("Removed from cart");
     },
   });
@@ -70,6 +74,7 @@ export default function Cart() {
       setCurrentOrderId(orderId);
       setPaymentDialogOpen(true);
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart-count"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err: Error) => toast.error(err.message),
