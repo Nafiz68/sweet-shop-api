@@ -15,12 +15,12 @@ import { ReactNode } from "react";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children, requiredRole }: { children: ReactNode; requiredRole?: string }) {
+function ProtectedRoute({ children, requiredRole, useLayout = true }: { children: ReactNode; requiredRole?: string; useLayout?: boolean }) {
   const { user, role, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   if (!user) return <Navigate to="/auth" replace />;
   if (requiredRole && role !== requiredRole) return <Navigate to="/" replace />;
-  return <Layout>{children}</Layout>;
+  return useLayout ? <Layout>{children}</Layout> : <>{children}</>;
 }
 
 function AuthRoute() {
@@ -50,7 +50,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><CustomerHome /></ProtectedRoute>} />
             <Route path="/cart" element={<ProtectedRoute requiredRole="customer"><Cart /></ProtectedRoute>} />
             <Route path="/orders" element={<ProtectedRoute requiredRole="customer"><Orders /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Admin /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute requiredRole="admin" useLayout={false}><Admin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

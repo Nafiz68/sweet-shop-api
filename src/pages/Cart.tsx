@@ -98,61 +98,133 @@ export default function Cart() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold font-display mb-8">Shopping Cart</h1>
-      <div className="space-y-4 mb-8">
-        {cartItems.map((item) => (
-          <Card key={item.id}>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                {item.products?.image_url ? (
-                  <img src={item.products.image_url} alt={item.products?.name} className="object-cover w-full h-full rounded-lg" />
-                ) : (
-                  <ShoppingBag className="h-6 w-6 text-muted-foreground/40" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-display font-semibold truncate">{item.products?.name}</h3>
-                <p className="text-sm text-muted-foreground">${Number(item.products?.price ?? 0).toFixed(2)} each</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity - 1 })}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <span className="w-8 text-center font-medium">{item.quantity}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 })}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-              <span className="font-bold w-20 text-right">${(Number(item.products?.price ?? 0) * item.quantity).toFixed(2)}</span>
-              <Button variant="ghost" size="icon" onClick={() => removeItem.mutate(item.id)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Card>
-        <CardContent className="flex items-center justify-between p-6">
-          <div>
-            <p className="text-sm text-muted-foreground">Total</p>
-            <p className="text-3xl font-bold font-display">${total.toFixed(2)}</p>
+    <div className="max-w-7xl mx-auto px-4 py-12 md:py-20">
+      <div className="flex flex-col md:flex-row gap-8 md:gap-12">
+        {/* Cart Items Section */}
+        <div className="flex-1 space-y-6">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl md:text-4xl font-bold font-display tracking-tight">Shopping Cart</h1>
+            <span className="text-muted-foreground font-medium">{cartItems.length} {cartItems.length === 1 ? 'Item' : 'Items'}</span>
           </div>
-          <Button size="lg" onClick={() => placeOrder.mutate()} disabled={placeOrder.isPending}>
-            {placeOrder.isPending ? "Creating order..." : "Proceed to Payment"}
-          </Button>
-        </CardContent>
-      </Card>
+
+          <div className="space-y-4">
+            {cartItems.map((item) => (
+              <div key={item.id} className="group relative bg-card/40 backdrop-blur-md border border-border/50 rounded-2xl p-4 transition-all duration-300 hover:bg-card/60 hover:shadow-lg hover:border-primary/20 flex gap-4 md:gap-6 items-center">
+
+                {/* Product Image */}
+                <div className="w-24 h-24 md:w-32 md:h-32 bg-secondary/30 rounded-xl overflow-hidden shrink-0 relative">
+                  {item.products?.image_url ? (
+                    <img src={item.products.image_url} alt={item.products?.name} className="object-cover w-full h-full" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full w-full text-muted-foreground/30">
+                      <ShoppingBag className="h-8 w-8" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between h-24 md:h-32 py-1">
+                  <div>
+                    <h3 className="font-display font-bold text-lg md:text-xl truncate pr-8">{item.products?.name}</h3>
+                    <p className="text-sm text-muted-foreground font-medium">${Number(item.products?.price ?? 0).toFixed(2)}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-auto">
+                    {/* Quantity Controls */}
+                    <div className="flex items-center bg-secondary/50 rounded-lg p-1 border border-border/50">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-md hover:bg-background/80"
+                        onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity - 1 })}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-md hover:bg-background/80"
+                        onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 })}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+
+                    {/* Total Price for Item */}
+                    <p className="font-display font-bold text-lg tracking-tight">
+                      ${(Number(item.products?.price ?? 0) * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Remove Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeItem.mutate(item.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Order Summary Section */}
+        <div className="w-full md:w-[380px] shrink-0">
+          <div className="sticky top-24">
+            <h2 className="text-xl font-bold font-display mb-6">Order Summary</h2>
+            <Card className="bg-card/40 backdrop-blur-xl border-border/50 shadow-xl shadow-black/5 overflow-hidden">
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-medium">${total.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="text-green-500 font-medium">Free</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax (Estimated)</span>
+                    <span className="font-medium">$0.00</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/50 pt-4">
+                  <div className="flex justify-between items-end mb-6">
+                    <span className="font-medium text-lg">Total</span>
+                    <span className="font-display font-bold text-3xl tracking-tight text-primary">
+                      ${total.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/25 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    onClick={() => placeOrder.mutate()}
+                    disabled={placeOrder.isPending}
+                  >
+                    {placeOrder.isPending ? (
+                      <span className="flex items-center gap-2">
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></span>
+                        Creating Order...
+                      </span>
+                    ) : (
+                      "Proceed to Checkout"
+                    )}
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-4">
+                    Secure checkout powered by Stripe
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
 
       {currentOrderId && (
         <PaymentDialog

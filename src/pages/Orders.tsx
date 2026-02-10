@@ -74,85 +74,107 @@ export default function Orders() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold font-display mb-8">My Orders</h1>
+    <div className="max-w-4xl mx-auto px-4 py-12 md:py-20">
+      <div className="flex items-center justify-between mb-8 md:mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold font-display tracking-tight">Order History</h1>
+        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 px-3 py-1 text-sm">
+          {orders.length} Total
+        </Badge>
+      </div>
+
       <div className="space-y-6">
         {orders.map((order) => (
-          <Card key={order.id}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <CardTitle className="font-display text-lg">
-                  Order #{order.id.slice(0, 8)}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(order.created_at).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <Badge className={statusColor[order.status] ?? ""} variant="outline">
-                    {order.status}
-                  </Badge>
-                  <Badge className={paymentStatusColor[order.payment_status] ?? ""} variant="outline">
-                    {order.payment_status}
-                  </Badge>
+          <div
+            key={order.id}
+            className="group bg-card/40 backdrop-blur-md border border-border/50 rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/5 hover:border-primary/20 transition-all duration-300"
+          >
+            {/* Order Header */}
+            <div className="bg-secondary/20 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <ShoppingBag className="h-5 w-5" />
                 </div>
-                <span className="font-bold font-display text-lg">${Number(order.total_price).toFixed(2)}</span>
+                <div>
+                  <h3 className="font-display font-bold text-lg">Order #{order.id.slice(0, 8).toUpperCase()}</h3>
+                  <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="divide-y">
+
+              <div className="flex items-center gap-3 self-start md:self-auto">
+                <Badge className={`${statusColor[order.status]} shadow-sm`} variant="outline">
+                  {order.status}
+                </Badge>
+                <Badge className={`${paymentStatusColor[order.payment_status]} shadow-sm`} variant="outline">
+                  {order.payment_status}
+                </Badge>
+                <div className="h-8 w-[1px] bg-border/60 mx-2 hidden md:block"></div>
+                <span className="font-display font-bold text-xl tracking-tight">${Number(order.total_price).toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Order Content */}
+            <div className="p-6">
+              <div className="space-y-2 mb-6">
                 {order.order_items?.map((item: any) => (
-                  <div key={item.id} className="flex items-center justify-between py-2">
-                    <span className="text-sm">{item.products?.name ?? "Unknown"}</span>
+                  <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-secondary/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      {item.products?.image_url && (
+                        <img src={item.products.image_url} alt="" className="w-8 h-8 rounded-md object-cover opacity-80" />
+                      )}
+                      <span className="text-sm font-medium">{item.products?.name ?? "Unknown Product"}</span>
+                    </div>
                     <span className="text-sm text-muted-foreground">
-                      {item.quantity} × ${Number(item.price_at_purchase).toFixed(2)}
+                      <span className="font-semibold text-foreground">{item.quantity}</span> × ${Number(item.price_at_purchase).toFixed(2)}
                     </span>
                   </div>
                 ))}
               </div>
-              
-              {order.payment_method && (
-                <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
-                  Payment: {order.payment_method.replace('_', ' ').toUpperCase()}
-                  {order.transaction_id && ` • ${order.transaction_id}`}
-                </div>
-              )}
 
-              <div className="flex gap-2 mt-4">
-                {order.payment_status === "pending" && order.status !== "cancelled" && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleRetryPayment(order)}
-                    className="flex-1"
-                  >
-                    Complete Payment
-                  </Button>
-                )}
-                {order.payment_status === "failed" && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleRetryPayment(order)}
-                    className="flex-1"
-                  >
-                    Retry Payment
-                  </Button>
-                )}
-                {(order.status === "pending" || order.status === "shipped") && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => cancelOrder.mutate(order.id)}
-                    disabled={cancelOrder.isPending}
-                    className="flex-1"
-                  >
-                    <XCircle className="h-4 w-4 mr-1" />
-                    Cancel Order
-                  </Button>
-                )}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t border-border/40">
+                <div className="text-xs text-muted-foreground/70 flex items-center gap-2">
+                  {order.payment_method && (
+                    <>
+                      <span className="uppercase font-semibold tracking-wider">{order.payment_method.replace('_', ' ')}</span>
+                      {order.transaction_id && <span>• ID: <span className="font-mono">{order.transaction_id.slice(-8)}</span></span>}
+                    </>
+                  )}
+                </div>
+
+                <div className="flex gap-3 w-full md:w-auto">
+                  {order.payment_status === "pending" && order.status !== "cancelled" && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleRetryPayment(order)}
+                      className="flex-1 md:flex-none shadow-lg shadow-primary/20"
+                    >
+                      Complete Payment
+                    </Button>
+                  )}
+                  {order.payment_status === "failed" && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleRetryPayment(order)}
+                      className="flex-1 md:flex-none shadow-lg shadow-primary/20"
+                    >
+                      Retry Payment
+                    </Button>
+                  )}
+                  {(order.status === "pending" || order.status === "shipped") && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => cancelOrder.mutate(order.id)}
+                      disabled={cancelOrder.isPending}
+                      className="flex-1 md:flex-none text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Cancel Order
+                    </Button>
+                  )}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
 
