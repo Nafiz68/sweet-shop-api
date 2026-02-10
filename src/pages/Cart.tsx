@@ -8,12 +8,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { PaymentDialog } from "@/components/PaymentDialog";
+import { CheckoutConfirmDialog } from "@/components/CheckoutConfirmDialog";
+import { CheckoutTransitionDialog } from "@/components/CheckoutTransitionDialog";
 
 export default function Cart() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
+  const [transitionOpen, setTransitionOpen] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const { data: cartItems, isLoading } = useQuery({
@@ -70,12 +74,22 @@ export default function Cart() {
       return data;
     },
     onSuccess: (orderId) => {
-      toast.success("Order created! Please complete payment.");
+      // toast.success("Order created! Please complete payment.");
+      setCheckoutConfirmOpen(false);
       setCurrentOrderId(orderId);
-      setPaymentDialogOpen(true);
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-      queryClient.invalidateQueries({ queryKey: ["cart-count"] });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      // Start transition
+      setTransitionOpen(true);
+
+      // After 2s, close transition and navigate to orders
+      setTimeout(() => {
+        setTransitionOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+        queryClient.invalidateQueries({ queryKey: ["cart-count"] });
+        queryClient.invalidateQueries({ queryKey: ["order-count"] });
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+        navigate("/orders");
+      }, 2000);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -204,7 +218,7 @@ export default function Cart() {
                   <Button
                     size="lg"
                     className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/25 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    onClick={() => placeOrder.mutate()}
+                    onClick={() => setCheckoutConfirmOpen(true)}
                     disabled={placeOrder.isPending}
                   >
                     {placeOrder.isPending ? (
@@ -226,13 +240,30 @@ export default function Cart() {
         </div>
       </div>
 
+      <CheckoutConfirmDialog
+        open={checkoutConfirmOpen}
+        onOpenChange={setCheckoutConfirmOpen}
+        onConfirm={() => placeOrder.mutate()}
+        totalAmount={total}
+        itemCount={cartItems?.length ?? 0}
+        isPending={placeOrder.isPending}
+      />
+
+      <CheckoutTransitionDialog open={transitionOpen} />
+
       {currentOrderId && (
         <PaymentDialog
           open={paymentDialogOpen}
           onOpenChange={setPaymentDialogOpen}
           orderId={currentOrderId}
           totalAmount={total}
-          onSuccess={() => navigate("/orders")}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["cart"] });
+            queryClient.invalidateQueries({ queryKey: ["cart-count"] });
+            queryClient.invalidateQueries({ queryKey: ["order-count"] });
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            navigate("/orders");
+          }}
         />
       )}
     </div>

@@ -29,6 +29,25 @@ export default function Layout({ children }: { children: ReactNode }) {
     },
   });
 
+  const { data: orderCount } = useQuery({
+    queryKey: ["order-count"],
+    enabled: !!user && role === "customer",
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id", { count: "exact" })
+        .eq("user_id", user.id)
+        .neq("status", "delivered")
+        .neq("status", "cancelled");
+      if (error) {
+        console.error("Order count error:", error);
+        return 0;
+      }
+      return data?.length ?? 0;
+    },
+  });
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
@@ -74,7 +93,15 @@ export default function Layout({ children }: { children: ReactNode }) {
                       </Link>
                     </Button>
                     <Button variant={isActive("/orders") ? "default" : "ghost"} size="sm" asChild>
-                      <Link to="/orders"><ShoppingBag className="h-4 w-4 mr-1" />Orders</Link>
+                      <Link to="/orders" className="relative">
+                        <ShoppingBag className="h-4 w-4 mr-1" />
+                        Orders
+                        {orderCount !== undefined && orderCount > 0 && (
+                          <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] rounded-full bg-orange-500 hover:bg-orange-500 px-1.5 text-[11px] font-bold text-white shadow-lg">
+                            {orderCount}
+                          </Badge>
+                        )}
+                      </Link>
                     </Button>
                   </>
                 )}
@@ -88,7 +115,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="container mx-auto px-4 py-8">{children}</main>
-      
+
       <footer className="border-t mt-20 py-8 bg-muted/30">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p className="mb-2">🍰 Sweet Shop - Your Premium Dessert Destination</p>

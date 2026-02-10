@@ -52,6 +52,7 @@ export default function Orders() {
     onSuccess: () => {
       toast.success("Order cancelled successfully");
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order-count"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err: Error) => toast.error(err.message),
