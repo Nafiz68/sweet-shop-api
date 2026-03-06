@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, ShoppingCart, Package, LogOut, LayoutDashboard, Cake } from "lucide-react";
 import { ReactNode } from "react";
+import { getLocalCartCount } from "@/lib/cartUtils";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, role, signOut } = useAuth();
@@ -14,9 +15,12 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const { data: cartCount } = useQuery({
     queryKey: ["cart-count"],
-    enabled: !!user && role === "customer",
     queryFn: async () => {
-      if (!user) return 0;
+      if (!user) {
+        // For anonymous users, get count from localStorage
+        return getLocalCartCount();
+      }
+      // For authenticated users, get count from database
       const { data, error } = await supabase
         .from("cart_items")
         .select("quantity")
@@ -70,45 +74,55 @@ export default function Layout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <nav className="flex items-center gap-2">
-            {user && (
+            {user && role === "admin" ? (
               <>
-                {role === "admin" ? (
-                  <Button variant={isActive("/admin") ? "default" : "ghost"} size="sm" asChild>
-                    <Link to="/admin"><LayoutDashboard className="h-4 w-4 mr-1" />Admin</Link>
-                  </Button>
-                ) : (
-                  <>
-                    <Button variant={isActive("/") ? "default" : "ghost"} size="sm" asChild>
-                      <Link to="/"><Package className="h-4 w-4 mr-1" />Products</Link>
-                    </Button>
-                    <Button variant={isActive("/cart") ? "default" : "ghost"} size="sm" asChild>
-                      <Link to="/cart" className="relative">
-                        <ShoppingCart className="h-4 w-4 mr-1" />
-                        Cart
-                        {cartCount !== undefined && cartCount > 0 && (
-                          <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] rounded-full bg-red-500 hover:bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-lg">
-                            {cartCount}
-                          </Badge>
-                        )}
-                      </Link>
-                    </Button>
-                    <Button variant={isActive("/orders") ? "default" : "ghost"} size="sm" asChild>
-                      <Link to="/orders" className="relative">
-                        <ShoppingBag className="h-4 w-4 mr-1" />
-                        Orders
-                        {orderCount !== undefined && orderCount > 0 && (
-                          <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] rounded-full bg-orange-500 hover:bg-orange-500 px-1.5 text-[11px] font-bold text-white shadow-lg">
-                            {orderCount}
-                          </Badge>
-                        )}
-                      </Link>
-                    </Button>
-                  </>
-                )}
-                {role && <Badge variant="outline" className="ml-2 capitalize">{role}</Badge>}
+                <Button variant={isActive("/admin") ? "default" : "ghost"} size="sm" asChild>
+                  <Link to="/admin"><LayoutDashboard className="h-4 w-4 mr-1" />Admin</Link>
+                </Button>
+                <Badge variant="outline" className="ml-2 capitalize">{role}</Badge>
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4" />
                 </Button>
+              </>
+            ) : (
+              <>
+                <Button variant={isActive("/") ? "default" : "ghost"} size="sm" asChild>
+                  <Link to="/"><Package className="h-4 w-4 mr-1" />Products</Link>
+                </Button>
+                <Button variant={isActive("/cart") ? "default" : "ghost"} size="sm" asChild>
+                  <Link to="/cart" className="relative">
+                    <ShoppingCart className="h-4 w-4 mr-1" />
+                    Cart
+                    {cartCount !== undefined && cartCount > 0 && (
+                      <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] rounded-full bg-red-500 hover:bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-lg">
+                        {cartCount}
+                      </Badge>
+                    )}
+                  </Link>
+                </Button>
+                <Button variant={isActive("/orders") ? "default" : "ghost"} size="sm" asChild>
+                  <Link to="/orders" className="relative">
+                    <ShoppingBag className="h-4 w-4 mr-1" />
+                    Orders
+                    {user && orderCount !== undefined && orderCount > 0 && (
+                      <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] rounded-full bg-orange-500 hover:bg-orange-500 px-1.5 text-[11px] font-bold text-white shadow-lg">
+                        {orderCount}
+                      </Badge>
+                    )}
+                  </Link>
+                </Button>
+                {user ? (
+                  <>
+                    {role && <Badge variant="outline" className="ml-2 capitalize">{role}</Badge>}
+                    <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="default" size="sm" asChild>
+                    <Link to="/auth">Sign In</Link>
+                  </Button>
+                )}
               </>
             )}
           </nav>

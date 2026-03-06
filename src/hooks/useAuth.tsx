@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { getLocalCart, clearLocalCart } from "@/lib/cartUtils";
 
 type AppRole = "admin" | "customer";
 
@@ -39,13 +40,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(userRole);
   };
 
+  const migrateLocalCartToDatabase = async (userId: string) => {
+    const localCart = getLocalCart();
+    if (localCart.length === 0) return;
+
+    console.log("Migrating local cart to database:", localCart);
+
+    try {
+      // For each item in local cart
+      for (const item of localCart) {
+        // Check if item already exists in user's cart
+        const { data: existing } = await supabase
+          .from("cart_items")
+          .select("id, quantity")
+          .eq("user_id", userId)
+          .eq("product_id", item.product_id)
+          .maybeSingle();
+
+        if (existing) {
+          // Update quantity
+          await supabase
+            .from("cart_items")
+            .update({ quantity: existing.quantity + item.quantity })
+            .eq("id", existing.id);
+        } else {
+          // Insert new item
+          await supabase
+            .from("cart_items")
+            .insert({
+              user_id: userId,
+              product_id: item.product_id,
+              quantity: item.quantity,
+            });
+        }
+      }
+
+      // Clear local cart after successful migration
+      clearLocalCart();
+      console.log("Local cart migrated successfully");
+    } catch (error) {
+      console.error("Error migrating local cart:", error);
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchRole(session.user.id), 0);
+          setTimeout(() => {
+            fetchRole(session.user.id);
+            migrateLocalCartToDatabase(session.user.id);
+          }, 0);
         } else {
           setRole(null);
         }
@@ -58,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchRole(session.user.id);
+        migrateLocalCartToDatabase(session.user.id);
       }
       setLoading(false);
     });

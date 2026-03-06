@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,9 +26,21 @@ const paymentStatusColor: Record<string, string> = {
 
 export default function Orders() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+
+  // If user is not logged in, show sign-in prompt
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+        <ShoppingBag className="h-16 w-16 mb-4" />
+        <p className="text-lg mb-4">Sign in to view your orders</p>
+        <Button onClick={() => navigate("/auth")}>Sign In</Button>
+      </div>
+    );
+  }
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["orders"],
@@ -35,7 +48,7 @@ export default function Orders() {
       const { data, error } = await supabase
         .from("orders")
         .select("*, order_items(*, products(name, image_url))")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;

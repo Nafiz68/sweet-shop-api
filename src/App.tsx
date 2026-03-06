@@ -35,7 +35,7 @@ function AuthRoute() {
 function CustomerHome() {
   const { role } = useAuth();
   if (role === "admin") return <Navigate to="/admin" replace />;
-  return <Products />;
+  return <Layout><Products /></Layout>;
 }
 
 const App = () => (
@@ -47,9 +47,9 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<AuthRoute />} />
-            <Route path="/" element={<ProtectedRoute><CustomerHome /></ProtectedRoute>} />
-            <Route path="/cart" element={<ProtectedRoute requiredRole="customer"><Cart /></ProtectedRoute>} />
-            <Route path="/orders" element={<ProtectedRoute requiredRole="customer"><Orders /></ProtectedRoute>} />
+            <Route path="/" element={<CustomerHome />} />
+            <Route path="/cart" element={<Layout><Cart /></Layout>} />
+            <Route path="/orders" element={<Layout><Orders /></Layout>} />
             <Route path="/admin" element={<ProtectedRoute requiredRole="admin" useLayout={false}><Admin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
